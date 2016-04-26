@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>TRACE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap -->
+       <link href="../css/bootstrap.min.css" rel="stylesheet" media="screen">
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.6.2/html5shiv.js"></script>
+      <script src="../../docs-assets/js/respond.min.js"></script>
+    <![endif]-->
+
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="../css/index.css" rel="stylesheet" />
+</head>
+  <body>
+
+
+<div class="container">
+
+<div class="row">
+<div class="col-md-6 col-md-offset-3 form-col">
+<form class="form-signin" role="form" method="post" action="auth.php">
+
+<h2 class="form-signin-heading text-primary ">DOCKER<small class="text-primary">仓库</small></h2>
+
+<div class="form-group">
+    <div class="input-group ">
+       <div class="input-group-addon ">用户名</div>
+      <input class="form-control" type="text" name="username" id="formGroupInputLarge" placeholder="密码任意输入" required/> 
+  </div>
+    </div>
+    
+  <div class="form-group">
+    <div class="input-group ">
+       <div class="input-group-addon">密&nbsp;&nbsp;&nbsp;码</div>
+      <input class="form-control" type="password"  name="passowrd"  required/>
+   </div>
+     </div>
+
+  
+    <div class="form-group">
+  
+     <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+
+   
+  </div>
+
+</form>
+</div>
+</div>
+
+</div>
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="../js/jquery.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+      <script src=../"js/bootstrap.min.js"></script>
+  
+  </body>
+</html> 

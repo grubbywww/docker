@@ -1,0 +1,266 @@
+kf-redis01:
+    image: redis:latest
+    ports:
+      - "6379"
+    restart: always
+
+kf-redis02:
+    image: redis:latest
+    ports:
+      - "6380"
+    restart: always
+
+config-server:
+    image: docker-registry.easemob.com/easemob-kefu/kefu-config-server:31.0.6-SNAPSHOT
+    environment:
+      - SERVER_PORT =8888
+      - SPRING_APPLICATION_NAME=configserver
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_URI=https://github.com/easemob/kefu-conf
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_USERNAME=console-easemob
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_PASSWORD=naqkBEcpngfuiBb7Gs4w
+    ports:
+      - "8888:8888"
+    restart: never
+
+mysql:
+    image: docker-registry.easemob.com/mysql:31.0.8.FINAL
+    ports:
+      - "3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=123456
+    volumes:
+      - /var/lib/mysql
+    restart: never
+
+connector:
+    image: docker-registry.easemob.com/easemob-kefu/kefu-connector:31.0.5.FINAL
+    environment:
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_APPLICATION_NAME=Connector
+      - SPRING_CLOUD_CONFIG_PROFILE=0
+      - SPRING_CLOUD_CONFIG_LABEL=dev_31-docker
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_TIMEOUT=20
+      - SPRING_CLOUD_CONSUL_ENABLED=false
+    links:
+      - config-server 
+      - mysql:kefu-db-wechat
+      - kf-redis01:kf_redis01
+      - kf-redis01:kf_redis02
+      - kafka:kf_kafka1
+      - kafka:kf_zk1
+    ports:
+      - "9813"
+    restart: always 
+
+webapp:
+    image: docker-registry.easemob.com/easemob-kefu/kefu-server:31.0.8.FINAL
+    environment:
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_APPLICATION_NAME=KFAppReadwrite
+      - SPRING_CLOUD_CONFIG_PROFILE=0
+      - SPRING_CLOUD_CONFIG_LABEL=dev_31-docker
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_TIMEOUT=20
+      - SPRING_CLOUD_CONSUL_ENABLED=false
+    links:
+      - config-server
+      - mysql:kefu-db-wechat
+      - kf-redis01:kf_redis01
+      - kf-redis02:kf_redis02
+      - ela02:kf_ela02
+      - kafka:kf_kafka1
+      - kafka:kf_zk1
+      - connector:kf_connector
+      - session-history:kf_session_history
+      - robot:kf_robot
+    ports:
+       - "8585"
+    restart: always
+
+session-history:
+    image: docker-registry.easemob.com/easemob-kefu/kefu-service-session-history-server:31.0.9.FINAL
+    environment:
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_APPLICATION_NAME=SessionHistory
+      - SPRING_CLOUD_CONFIG_PROFILE=0
+      - SPRING_CLOUD_CONFIG_LABEL=dev_31-docker
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_TIMEOUT=20
+      - SPRING_CLOUD_CONSUL_ENABLED=false
+    links:
+      - config-server
+      - "ela02:kf_ela02"
+      - "kf-redis01:kf_redis01"
+      - "kafka:kf_kafka"
+    ports:
+      - "8989"
+    restart: always
+
+ela01:
+    image: elasticsearch:1.7.3
+    ports:
+      - "9200"
+      - "9300"
+    restart: never
+
+ela02:
+    image: elasticsearch:2.1
+    ports:
+      - "9210"
+      - "9310"
+    restart: always
+
+schedule:
+    image: docker-registry.easemob.com/easemob-kefu-statistic/kefu-schedule:31.0.6.FINAL
+    environment:
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_APPLICATION_NAME=Schedule
+      - SPRING_CLOUD_CONFIG_PROFILE=0
+      - SPRING_CLOUD_CONFIG_LABEL=dev_31-docker
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_TIMEOUT=20
+      - SPRING_CLOUD_CONSUL_ENABLED=false
+    links:
+      - config-server
+      - mysql:kf_db
+      - kf-redis01:kf_redis01
+    restart: always
+
+
+statistic:
+    image: docker-registry.easemob.com/easemob-kefu-statistic/kefu-statistic-server:31.0.5.FINAL
+    environment:
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_APPLICATION_NAME=S
+      - SPRING_CLOUD_CONFIG_PROFILE=0
+      - SPRING_CLOUD_CONFIG_LABEL=dev_31-docker
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_TIMEOUT=20
+      - SPRING_CLOUD_CONSUL_ENABLED=false
+    links:
+      - config-server
+      - mysql:kf_db
+      - kf-redis01:kf_redis01
+    restart: always
+
+
+
+
+robot:
+    image: docker-registry.easemob.com/easemob-kefu/kefu-robot-server:31.0.5.FINAL
+    environment:
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_APPLICATION_NAME=KFRobot
+      - SPRING_CLOUD_CONFIG_PROFILE=0
+      - SPRING_CLOUD_CONFIG_LABEL=dev_31-docker
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_TIMEOUT=20
+      - SPRING_CLOUD_CONSUL_ENABLED=false
+    links:
+      - config-server
+      - mysql:kf_db
+      - kf-redis01:kf_redis01
+      - ela01:kf_ela01
+      - kafka:kf_kafka
+   #  - webapp:kf_webapp
+    ports:
+      - "8888"
+    restart: always
+
+robot-consumer:
+    image: docker-registry.easemob.com/easemob-kefu/kefu-robot-kafka-consumers:31.0.5.FINAL
+    environment:
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_APPLICATION_NAME=KFRobotConsumer
+      - SPRING_CLOUD_CONFIG_PROFILE=0
+      - SPRING_CLOUD_CONFIG_LABEL=dev_31-docker
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_TIMEOUT=20
+      - SPRING_CLOUD_CONSUL_ENABLED=false
+    links:
+      - config-server
+      - kf-redis01:kf_redis01
+      - ela01:kf_ela01
+      - kafka:kf_kafka
+    restart: always
+
+wechat:
+   image: docker-registry.easemob.com/easemob-kefu/kefu-wechat-server:37.0.0-SNAPSHOT
+   environment:
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_APPLICATION_NAME=Wechat
+      - SPRING_CLOUD_CONFIG_PROFILE=0
+      - SPRING_CLOUD_CONFIG_LABEL=dev_31-docker
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_TIMEOUT=20
+      - SPRING_CLOUD_CONSUL_ENABLED=false
+   links:
+      - config-server
+      - mysql:kefu-db-wechat
+      - kf-redis01:kf_redis01
+      - kafka:kf_kafka
+   ports:
+      - "8587"
+   restart: always
+
+tickets:
+   image: docker-registry.easemob.com/easemob-kefu/ticket-rest:31.0.12.FINAL
+   environment:
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_APPLICATION_NAME=Tickets
+      - SPRING_CLOUD_CONFIG_PROFILE=0
+      - SPRING_CLOUD_CONFIG_LABEL=dev_31-docker
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_TIMEOUT=20
+      - SPRING_CLOUD_CONSUL_ENABLED=false
+   links:
+      - config-server
+      - mysql:kefu-db-wechat
+      - kf-redis01:kf_redis01
+   ports:
+      - "8081"
+   restart: always
+
+kafka:
+   image: docker-registry.easemob.com/kafka1:31.0.10-SNAPSHOT
+   ports:
+      - "9092"
+      - "2181"
+nginx:
+   image: docker-registry.easemob.com/nginx:ngx-to-snapshot3
+   ports:
+      - "80:80"
+   links:
+      - "webapp:kf_webapp"
+      - "robot:kf_robot"
+      - "tickets:kf_tickets"
+      - "wechat:kf_wechat"
+      - "session-history:kf_session_history"
+   restart: always
+kefu-cidocker-test:
+   image: docker-registry.easemob.com/kefu_cidocker_test:31.0.0.CR1
+   links:
+      - "nginx"
+   restart: always
+#push-publish:
+#   image: 
+#   links:
+#      - "kf-redis01:kf_redis01"
+#      - "rabbitmq"
+#      - "kafka:kf_kafka1"
+#      - "kafka:kf_zk1" 
+#      - "webapp:kf_webapp"
+#   ports:
+#      - "8080"
+#      - "8081"
+#      - "8082"
+#      - "8083"
+#      - "9090"
+#      - "9091"
+#      - "9092"
+#      - "9093"
+#      - "8090"
+#      - "8091"
+#      - "8092"
+#      - "8093"
+#   restart: always
+
+#rabbitmq:
+#   image: rabbitmq
+#   ports:
+#     - "4369"
+#     - "5671"
+#     - "5672"
+#     - "25672"
